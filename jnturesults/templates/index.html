@@ -1,0 +1,226 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="https://i.ibb.co/YbGqDQm/image.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Data</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        h1 {
+            color: #0056b3;
+            text-align: center;
+        }
+
+        #searchInput {
+            margin-bottom: 10px;
+            padding: 8px;
+            width: 300px;
+            font-size: 16px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        #examList {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .examListItem {
+            cursor: pointer;
+            margin-bottom: 10px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            transition: background-color 0.3s;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .examListItem:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* Style for the pop-up form */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+        }
+
+        #popupForm {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border: 2px solid #0056b3;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+            border-radius: 10px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            margin-bottom: 8px;
+        }
+
+        input {
+            margin-bottom: 16px;
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #0056b3;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 8px;
+        }
+
+        button:hover {
+            background-color: #004080;
+        }
+        
+        #about {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .about2{
+            color: #2b00ff;
+            font-weight: bold;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        #about p {
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        #author-info {
+            text-align: right;
+align-items:center;
+        }
+
+        #author-info h2 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Exam Names</h1>
+
+<!-- Search input -->
+<input type="text" id="searchInput" placeholder="Search exam names">
+
+<!-- Display all exam names initially -->
+<div id="examList">
+    {% for exam in exam_data %}
+        <div class="examListItem" data-link="{{ exam.Link }}">
+            {{ exam.ExamName }}
+        </div>
+    {% endfor %}
+</div>
+
+<div id="about">
+    <h2 class="about2">About:</h2>
+    <p>This is a scraping app of the JNTUGVResults page. You can scrape the results into a table format by selecting the exam and students' roll numbers.</p>
+</div>
+
+<div id="author-info">
+    <h2>By<br>
+    Aari Eswar<br>
+    21VV1A1201</h2>
+</div>
+<div id="overlay"></div>
+<div id="popupForm">
+    <form id="examForm" action="{% url 'results' %}" method="post" onclick="event.stopPropagation()">
+        {% csrf_token %}
+        <label for="input1">Normal Entry:</label> <input type="text" id="input1" name="input1" placeholder="ex:21vv1a" required>
+        <label for="input2">Initial roll num:</label> <input type="text" id="input2" name="input2" placeholder="ex:1201" required>
+        <label for="input3">Last roll num:</label> <input type="text" id="input3" name="input3" placeholder="ex:1265" required>
+        <label for="input4">Lateral Entry:</label> <input type="text" id="input4" name="input4" placeholder="ex:22vv5a or NA" required>
+        <label for="input5">Initial roll num:</label> <input type="text" id="input5" name="input5" placeholder="1267 or NA" required>
+        <label for="input6">Last roll Num:</label> <input type="text" id="input6" name="input6" placeholder="1274 or NA" required>
+
+        <input type="hidden" id="examLinkInput" name="exam_link">
+
+        <button type="submit">Submit</button>
+        <button type="button" onclick="closePopup()">Close</button>
+    </form>
+</div>
+
+<script>
+    function openPopup(examLink) {
+        document.getElementById('examLinkInput').value = examLink;
+        document.getElementById('popupForm').style.display = 'block';
+        document.getElementById('overlay').style.display = 'block';
+    }
+
+    function closePopup() {
+        document.getElementById('popupForm').style.display = 'none';
+        document.getElementById('overlay').style.display = 'none';
+    }
+
+    // JavaScript code to handle search and navigation
+    document.getElementById('searchInput').addEventListener('input', function () {
+        var searchTerm = this.value.toLowerCase();
+        var examList = document.getElementById('examList');
+        var examItems = examList.getElementsByClassName('examListItem');
+
+        // Iterate through exam items and show/hide based on the search term
+        for (var i = 0; i < examItems.length; i++) {
+            var examName = examItems[i].innerText.toLowerCase();
+
+            // Check if the exam name contains the search term
+            if (examName.includes(searchTerm)) {
+                examItems[i].style.display = 'block';
+            } else {
+                examItems[i].style.display = 'none';
+            }
+        }
+    });
+
+    // Add click event to navigate to the link when an exam name is clicked
+    var examList = document.getElementById('examList');
+    examList.addEventListener('click', function (event) {
+        var target = event.target;
+        if (target.classList.contains('examListItem')) {
+            var link = target.getAttribute('data-link');
+            openPopup(link);
+        }
+    });
+</script>
+</body>
+</html>
